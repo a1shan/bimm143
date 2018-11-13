@@ -1,0 +1,44 @@
+---
+title: "Class12B: Structural Bioinformatics II"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Get HIV-Pr from PDB database and inspect
+```{r}
+library(bio3d)
+file.name <- get.pdb("1hsg")
+
+hiv <- read.pdb(file.name)
+
+hiv
+```
+
+**Q1:What is the name of the two non protein resid values in this structure?**
+water and MK1 = non-protein residues
+
+## Prepare protein and ligand input files
+```{r}
+prot <- trim.pdb(hiv, "protein")
+lig <- trim.pdb(hiv, "ligand")
+
+prot
+lig
+
+write.pdb(prot, file = "1hsg_protein.pdb")
+write.pdb(lig, file = "1hsg_ligand.pdb")
+
+
+```
+
+## Protein Docking using AutoDock Tools
+```{r}
+
+```
+
+
+
+
