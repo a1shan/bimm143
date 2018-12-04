@@ -1,0 +1,225 @@
+---
+title: "class15: Genome Informatics II"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Install DESeq2
+```{r}
+##source("http://bioconductor.org/biocLite.R")
+##biocLite()
+
+##biocLite("DESeq2")
+```
+
+##RNA Sequencing Analysis
+1. read countData and colData files with DESeq2
+  - stringsAsFactors keeps matrix as vector and prevents conversion into factors
+```{r}
+counts <- read.csv("data/airway_scaledcounts.csv", stringsAsFactors = FALSE)
+metadata <-  read.csv("data/airway_metadata.csv", stringsAsFactors = FALSE)
+```
+
+2. examine metadata file to find the **control** and **treated** cell lines
+```{r}
+control.inds <- metadata$dex == "control"
+control <- metadata[control.inds, ]
+control
+
+treated.inds <- metadata$dex == "treated"
+treated <- metadata[treated.inds, ]
+treated
+```
+
+3. determine the mean gene expression in **control** cell lines
+```{r}
+control.mean <- rowSums( counts[ ,control$id] )/ nrow(control) 
+
+names(control.mean) <- counts$ensgene
+```
+
+4. determine the mean gene expression for **treated** cell lines
+```{r}
+treated.mean <- rowSums(counts [, treated$id]) / nrow(treated)
+
+names(treated.mean) <- counts$ensgene
+```
+
+5. combine control and treated data frames
+```{r}
+meancounts <- data.frame(control.mean, treated.mean)
+meancounts
+```
+
+6. calculate sum of mean counts across all genes for each group (control/treated)
+```{r}
+colSums(meancounts)
+```
+
+7. scatter plot to compare mean of treated samples to mean of control samples. is treated = control?
+```{r}
+plot(meancounts$control.mean, meancounts$treated.mean)
+
+#change axis to log to observe significant difference/all the points
+plot(meancounts$control.mean, meancounts$treated.mean, log = "xy")
+```
+
+8. Log2 Fold Change = change/diff between treated and control in rates of 2x
+```{r}
+meancounts$log2fc <- log2(meancounts[,"treated.mean"]/meancounts[,"control.mean"])
+head(meancounts)
+```
+NaN = not a number
+Inf = infinite
+want to filter out these values
+
+9. filter genes with no expression
+```{r}
+zero.vals <- which(meancounts[,1:2]==0, arr.ind=TRUE)
+#meancounts[ ,1:2] == 0 : find which ones have 0 expression (T/F)
+#which ( , arr.ind = T) : tells which rows, genes are the ones that are true (0 expression)
+
+to.rm <- unique(zero.vals[,1])
+#unique : removes zeros
+
+mycounts <- meancounts[-to.rm,]
+head(mycounts)
+```
+
+10. Pick a log fold change threshold of +2 and -2 to call differential expression
+```{r}
+up.ind <- mycounts$log2fc > 2
+down.ind <- mycounts$log2fc < (-2)
+```
+
+11. # of genes that are up and down regulated
+```{r}
+sum(up.ind)
+sum(down.ind)
+```
+
+## Annotate genes
+1. read annotation data file
+```{r}
+anno <- read.csv("data/annotables_grch38.csv")
+head(anno)
+```
+
+2. use merge function to add annotation data to mycounts data
+```{r}
+mycounts.anno <- merge(mycounts, anno, by.x = "row.names", by.y = "ensgene")
+mycounts.anno
+```
+
+3. Another approach to annotate using bioconductor packages
+```{r}
+#biocLite("AnnotationDbi")
+#biocLite("org.Hs.eg.db")
+
+library("AnnotationDbi")
+library("org.Hs.eg.db")
+```
+
+add database  to mycounts dataframe
+```{r}
+mycounts$symbol <- mapIds(org.Hs.eg.db,
+                     keys=row.names(mycounts),
+                     column="SYMBOL",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+mycounts$uniprot <- mapIds(org.Hs.eg.db,
+                     keys=row.names(mycounts),
+                     column="SYMBOL",
+                     keytype="UNIPROT",
+                     multiVals="first")
+
+```
+
+
+##DESeq2
+1. load package
+```{r}
+library(DESeq2)
+```
+
+2. set up dataset
+```{r}
+dds <- DESeqDataSetFromMatrix(countData=counts, 
+                              colData=metadata, 
+                              design=~dex, 
+                              tidy=TRUE)
+
+dds
+```
+
+3. run DESeq
+```{r}
+dds <- DESeq(dds)
+res <- results(dds)
+```
+
+4. print out summary of DESeq results
+```{r}
+summary(res)
+```
+
+5. change pvalue default value to 0.05
+```{r}
+res05 <- results(dds, alpha = 0.05)
+res05
+```
+
+6. change to 0.01
+```{r}
+res01 <- results(dds, alpha = 0.01)
+res01
+```
+
+7. save results to csv file
+```{r}
+write.csv(res01, "signif01_results.csv")
+```
+
+##Focus on gene: CRISPLD2
+```{r}
+i <- grep("CRISPLD2", res01$symbol)
+res01[i, ]
+```
+
+```{r}
+d <- plotCounts(dds, gene = "ENSG00000103196", intgroup = "dex", returnData = T)
+d
+```
+
+2. Boxplot
+```{r}
+boxplot(count ~dex, data=d)
+```
+
+##Volcano plots
+```{r}
+plot(res01$log2FoldChange, -log(res01$padj))
+```
+
+2. make colored version
+```{r}
+mycols <- rep("black", nrow(res01))
+mycols[abs(res01$log2FoldChange) > 2] <- "red"
+
+inds <- (res01$padj < 0.01) & (abs(res01$log2FoldChange) > 2)
+mycols[inds] <- "blue"
+
+plot(res01$log2FoldChange, -log(res01$padj), col=mycols)
+```
+
+
+
+
+
+
+
+
+

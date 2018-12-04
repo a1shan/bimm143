@@ -1,0 +1,41 @@
+---
+title: "midterm: find a gene"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+##Read FASTA format alignment
+```{r}
+library(bio3d)
+cluster <- read.fasta("cluster")
+```
+
+##Calculate sequence identity matrix
+```{r}
+seq.ide <- seqidentity(cluster)
+
+#plot identity matrix
+plot.dmat(seq.ide, color.palette = mono.colors)
+
+```
+
+##Generate heatmap plot
+```{r}
+heatmap(seq.ide, margins = c(18, 18), scale= "none")
+```
+
+##Search for most similar atomic resolution to aligned seq
+```{r}
+consensus <- consensus(cluster)
+print(consensus$`seq`)
+
+blast <- blast.pdb(consensus$seq)
+print(blast)
+
+pdb.annotate(c("4O9S", "3FMZ", "1JYD", "1BRP", "1JYJ", "1QAB"), anno.terms = NULL)
+```
+

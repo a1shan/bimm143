@@ -35,10 +35,33 @@ write.pdb(lig, file = "1hsg_ligand.pdb")
 ```
 
 ## Protein Docking using AutoDock Tools
-```{r}
+**Q2: Can you locate the binding site visually? Note that
+crystal structures normally lack hydrogen atoms, why?**
 
+
+**Q3: Look at the charges. Does it make sense (e.g. based on your knowledge of the
+physiochemical properties of amino acids)?**
+
+## Docking with Vina
+run this command: `"\Program Files (x86)\The Scripps Researc
+h Institute\Vina\vina.exe" --config config.
+text --log log.txt`
+
+## Inspecting docking results
+convert all.pdbqt to pdb format
+```{r}
+library(bio3d)
+res <- read.pdb("all.pdbqt.txt", multi=T)
+res
+
+write.pdb(res, "results.pbd")
 ```
 
+## Qualitatively determine docking
+```{r}
+ori <- read.pdb("ligand.pdbqt.txt")
+rmsd(ori, res)
+```
 
 
 

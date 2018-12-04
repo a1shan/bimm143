@@ -1,0 +1,144 @@
+---
+title: "Structural Bioinfo Class11"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+##PDB database composition statistics
+Download PDB CSV Statistiscs from http://www.rcsb.org/stats/summary
+
+```{r}
+pdbstats <- read.csv("Data Export Summary.csv", row.names = 1)
+pdbstats
+```
+
+Edit table format
+```{r}
+library(knitr)
+kable(pdbstats)
+```
+
+Determine percentage of structures by X-ray & Electron Microscopy
+```{r}
+#Determine TOTAL structures
+nstruc <- sum(pdbstats$Total)
+
+#Determine % structures by experimental method
+EMpro <- pdbstats$Total / nstruc
+per <- round(EMpro, 4)*100
+
+```
+
+There are `r per[1]`% X-ray structures and `r per[3]`% Electron Microscopy structures in the PDB database as of `r Sys.Date()`
+```{r}
+#add percent to table
+nstats <- pdbstats
+nstats$Percent <- per
+kable(nstats)
+```
+
+Proportion of structures are protein?
+```{r}
+proteinpro <- round(sum(nstats$Proteins) / nstruc *100, 2)
+```
+`r proteinpro`% of structures that are protein as of `r Sys.Date()`
+
+There are 1130 HIV-1 protease structures in current PDB.
+
+##Bio3D in R
+load package with **library()** function
+```{r}
+library(bio3d)
+```
+
+```{r}
+pdb <- read.pdb("1hsg")
+pdb
+```
+198 residues. H2O and MK1 non-protein residues
+
+find attributes
+```{r}
+attributes(pdb)
+```
+
+PDB$atom is a dataframe R object
+```{r}
+str(pdb$atom)
+```
+
+```{r}
+#print xyz data
+pdb$xyz
+
+#examine table dimensions
+dim(pdb$xyz)
+```
+
+##Atom Selection
+Select C-alpha atoms
+```{r}
+ca.inds <- atom.select(pdb, "calpha")
+ca.inds
+
+```
+
+Select few C-alpha atoms
+```{r}
+head(pdb$atom[ca.inds$atom,])
+```
+
+Select xyz coordinates
+```{r}
+head(pdb$xyz[, ca.inds$xyz])
+```
+
+Select Chain A
+```{r}
+a.inds <- atom.select(pdb, chain="A")
+
+```
+
+##working with multiple PDB files
+```{r}
+#download some example files
+ids <- c("1TND_B","1AGR_A","1TAG_A","1GG2_A","1KJY_A","4G5Q_A")
+files <- get.pdb(ids, split = TRUE)
+
+```
+```{r}
+# Extract and align the chains we are interested in
+pdbs <- pdbaln(files, fit = TRUE)
+
+# Print to screen a summary of the 'pdbs' object
+pdbs
+```
+
+##PCA
+```{r}
+# find invariant core
+core <- core.find(pdbs)
+
+# superimpose all structures to core
+pdbs$xyz = pdbfit(pdbs, core)
+
+# Perform PCA
+pc.xray <- pca(pdbs)
+
+# plot PCA
+plot(pc.xray)
+```
+
+
+```{r}
+# Visualize first principal component
+pc1 <- mktrj(pc.xray, pc=1, file="pc_1.pdb")
+
+```
+
+
+
