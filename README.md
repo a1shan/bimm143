@@ -12,3 +12,4 @@ My class list includes:
 - [class 14](https://github.com/a1shan/bimm143/blob/master/class09/class14.md)
 - [class 15](https://github.com/a1shan/bimm143/blob/master/class09/class15.md)
 - [class 16](https://github.com/a1shan/bimm143/blob/master/class09/class16.md)
+- [midterm project](https://github.com/a1shan/bimm143/blob/master/midterm/midterm.md)
